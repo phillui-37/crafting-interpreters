@@ -1,0 +1,7 @@
+expression = equality ;
+equality = comparison , { ( "!=" | "==" ) , comparison } ;
+comparison = term , { ( ">" | ">=" | "<" | "<=" ) , term } ;
+primary = NUMBER | STRING | "true" | "false" | "nil" | "(" , expression , ")" ;
+unary = ( "-" | "!" ) , unary  | primary ;
+factor = unary , { ( "/" | "*" ) , unary } ;
+term = factor , { ( "-" | "+" ) , factor } ;
