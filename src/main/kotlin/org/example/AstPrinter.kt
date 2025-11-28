@@ -1,11 +1,12 @@
 package org.example
 
 class AstPrinter : Expr.Visitor<String> {
-    override fun visit(expr: Expr) = when (expr) {
+    override fun visitExpr(expr: Expr) = when (expr) {
         is Expr.Binary -> parenthesize(expr.op.lexeme, expr.l, expr.r)
         is Expr.Grouping -> parenthesize("group", expr.expr)
         is Expr.Literal -> expr.v?.toString() ?: "nil"
         is Expr.Unary -> parenthesize(expr.op.lexeme, expr.r)
+        else -> "Unsupported"
     }
 
     private fun parenthesize(name: String, vararg exprs: Expr): String {
