@@ -139,6 +139,8 @@ class Parser(private val tokens: List<Token>) {
             if (expr is Expr.Variable) {
                 val name = expr.name
                 return Assign(name, value)
+            } else if (expr is Expr.Get) {
+                return Expr.Set(expr.obj, expr.name, value)
             }
 
             error(equals, "Invalid assignment target.")
@@ -247,6 +249,9 @@ class Parser(private val tokens: List<Token>) {
         while (true) {
             if (match(TokenType.LEFT_PAREN)) {
                 expr = finishCall(expr)
+            } else if (match(TokenType.DOT)) {
+                val name = consume(TokenType.IDENTIFIER, "Expect property name after '.'.")
+                expr = Expr.Get(expr, name)
             } else {
                 break
             }
@@ -265,6 +270,13 @@ class Parser(private val tokens: List<Token>) {
             consume(TokenType.RIGHT_PAREN, "Expect ')' after expression.")
             Expr.Grouping(expr)
         }
+        match(TokenType.SUPER) -> {
+            val keyword = previous()
+            consume(TokenType.DOT, "Expect '.' after 'super'.")
+            val method = consume(TokenType.IDENTIFIER, "Expect superclass method name.");
+            Expr.Super(keyword, method)
+        }
+        match(TokenType.THIS) -> Expr.This(previous())
 
         else -> throw error(peek(), "Expect expression.")
     }
@@ -296,6 +308,7 @@ class Parser(private val tokens: List<Token>) {
     private fun declaration(): Stmt? {
         try {
             return when {
+                match(TokenType.CLASS) -> classDeclaration()
                 match(TokenType.FUN) -> function("function")
                 match(TokenType.VAR) -> varDeclaration()
                 else -> statement()
@@ -304,6 +317,25 @@ class Parser(private val tokens: List<Token>) {
             synchronize()
             return null
         }
+    }
+
+    private fun classDeclaration(): Stmt.Class {
+        val name = consume(TokenType.IDENTIFIER, "Expect class name.")
+
+        val superClass = if (match(TokenType.LESS)) run {
+            consume(TokenType.IDENTIFIER, "Expect superclass name.")
+            Expr.Variable(previous())
+        } else null
+
+        consume(TokenType.LEFT_BRACE, "Expect '{' before class body.")
+
+        val methods = mutableListOf<Stmt.Function>()
+        while (!check(TokenType.RIGHT_BRACE) && !isAtEnd()) {
+            methods.add(function("method"))
+        }
+
+        consume(TokenType.RIGHT_BRACE, "Expect '}' after class body.")
+        return Stmt.Class(name, superClass, methods)
     }
 
     private fun function(kind: String): Stmt.Function {

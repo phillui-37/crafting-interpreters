@@ -1,6 +1,6 @@
 package org.example
 
-class Environment(private val enclosing: Environment? = null) {
+class Environment(val enclosing: Environment? = null) {
     val values = mutableMapOf<String, Any?>()
 
     operator fun get(name: Token): Any {

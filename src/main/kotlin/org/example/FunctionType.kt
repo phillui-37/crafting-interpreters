@@ -2,5 +2,7 @@ package org.example
 
 enum class FunctionType {
     NONE,
-    FUNCTION
+    FUNCTION,
+    METHOD,
+    CONSTRUCTOR
 }

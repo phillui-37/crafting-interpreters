@@ -1,5 +1,19 @@
-fun add(a,b,c) {
-    return a+b+c;
+class Math {
+    square(n) {
+        return n*n;
+    }
 }
 
-print add(1,2,3);
+class Math2 < Math {
+    cook(n) {
+        var test = super.square(n) / 2;
+        return test;
+    }
+}
+
+fun sq2(n) {return n*n;}
+
+var m = Math2();
+print "This is " + m.toString();
+print m.square(3) == sq2(3);
+print m.cook(3);

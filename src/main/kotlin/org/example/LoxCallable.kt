@@ -7,11 +7,12 @@ interface LoxCallable {
 
 data class LoxFunction(
     val declaration: Stmt.Function,
-    val closure: Environment
+    private val closure: Environment,
+    private val isCstr: Boolean
 ): LoxCallable {
     override fun arity() = declaration.params.size
 
-    override fun invoke(
+    override operator fun invoke(
         interpreter: Interpreter,
         arguments: List<Any?>
     ): Any? {
@@ -23,10 +24,18 @@ data class LoxFunction(
         try {
             interpreter.executeBlock(declaration.body, env)
         } catch (ret: Return) {
+            if (isCstr) return closure.getAt(0, "this")
             return ret.value
         }
+        if (isCstr) return closure.getAt(0, "this")
         return null
     }
 
     override fun toString() = "<fn ${declaration.name.lexeme}>"
+
+    fun bind(instance: LoxInstance): LoxFunction {
+        val env = Environment(closure)
+        env.define("this", instance)
+        return LoxFunction(declaration, env, isCstr)
+    }
 }

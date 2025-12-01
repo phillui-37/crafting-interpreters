@@ -1,12 +1,13 @@
 expression = assignment ;
 equality = comparison , { ( "!=" | "==" ) , comparison } ;
 comparison = term , { ( ">" | ">=" | "<" | "<=" ) , term } ;
-primary = "true" | "false" | "nil"
+primary = "true" | "false" | "nil" | "this"
         | NUMBER | STRING
         | "(" , expression , ")"
-        | IDENTIFIER ;
+        | IDENTIFIER
+        | "super" , "." , IDENTIFIER ;
 unary = ( "-" | "!" ) , unary  | call ;
-call = primary , { "(" , [ arguments ] , ")" } ;
+call = primary , { "(" , [ arguments ] , ")" | "." , IDENTIFIER } ;
 arguments = expression , { "," , expression } ;
 factor = unary , { ( "/" | "*" ) , unary } ;
 term = factor , { ( "-" | "+" ) , factor } ;
@@ -16,7 +17,7 @@ declaration = classDecl
             | funDecl
             | varDecl
             | statement ;
-classDecl = "class" , IDENTIFIER , "{" , [ function ] , "}" ;
+classDecl = "class" , IDENTIFIER , [ "<" , IDENTIFIER ] , "{" , [ function ] , "}" ;
 funDecl = "fun" , function ;
 function = IDENTIFIER , "(" , [ parameters ] , ")" , block ;
 parameters = IDENTIFIER , { "," , IDENTIFIER } ;
@@ -31,7 +32,7 @@ statement = exprStmt
 returnStmt = "return" , [ expression ] , ";" ;
 exprStmt = expression , ";" ;
 printStmt = "print" , expression , ";" ;
-assignment = IDENTIFIER , "=" , assignment
+assignment = [ call , "." ] , IDENTIFIER , "=" , assignment
            | logic_or ;
 block = "{" , { declaration } , "}" ;
 ifStmt = "if" , "(" , expression , ")" , statement , [ "else" , statement ] ;

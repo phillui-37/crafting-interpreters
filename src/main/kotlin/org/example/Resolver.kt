@@ -6,6 +6,12 @@ class Resolver(private val interpreter: Interpreter) : Expr.Visitor<Unit>, Stmt.
     private val scopes = Stack<MutableMap<String, Boolean>>()
     private var currentFn = FunctionType.NONE
 
+    private enum class ClassType {
+        NONE, CLASS, SUBCLASS
+    }
+
+    private var currentClass = ClassType.NONE
+
     override fun visitExpr(expr: Expr) {
         when (expr) {
             is Expr.Variable -> {
@@ -37,6 +43,25 @@ class Resolver(private val interpreter: Interpreter) : Expr.Visitor<Unit>, Stmt.
             }
             is Expr.Unary -> {
                 resolve(expr.r)
+            }
+            is Expr.Get -> {
+                resolve(expr.obj)
+            }
+            is Expr.Set -> {
+                resolve(expr.value)
+                resolve(expr.obj)
+            }
+            is Expr.This -> {
+                if (currentClass == ClassType.NONE) {
+                    Lox.error(expr.keyword, "Can't use 'this' outside of a class.")
+                    return
+                }
+                resolveLocal(expr, expr.keyword)
+            }
+            is Expr.Super -> when (currentClass) {
+                ClassType.NONE -> Lox.error(expr.keyword, "Can't use 'super' outside a class.")
+                ClassType.CLASS -> Lox.error(expr.keyword, "Can't use 'super' in a class with no superclass.")
+                else -> resolveLocal(expr, expr.keyword)
             }
         }
     }
@@ -74,11 +99,43 @@ class Resolver(private val interpreter: Interpreter) : Expr.Visitor<Unit>, Stmt.
                 if (currentFn == FunctionType.NONE) {
                     Lox.error(stmt.keyword, "Can't return from top-level code.")
                 }
+                if (currentFn == FunctionType.CONSTRUCTOR) {
+                    Lox.error(stmt.keyword, "Can't return a value from an constructor.")
+                }
                 resolve(stmt.value)
             }
             is Stmt.While -> {
                 resolve(stmt.cond)
                 resolve(stmt.body)
+            }
+            is Stmt.Class -> {
+                val enclosingClass = currentClass
+                currentClass = ClassType.CLASS
+
+                declare(stmt.name)
+                define(stmt.name)
+
+                stmt.superClass?.also {
+                    currentClass = ClassType.SUBCLASS
+                    if (stmt.name.lexeme == it.name.lexeme) {
+                        Lox.error(it.name, "A class can't inherit from itself.")
+                    }
+                    resolve(it)
+
+                    beginScope()
+                    scopes.peek()["super"] = true
+                }
+
+                beginScope()
+                scopes.peek()["this"] = true
+                stmt.methods.forEach {
+                    resolveFunction(it, if (it.name.lexeme == "init") FunctionType.CONSTRUCTOR else FunctionType.METHOD)
+                }
+                endScope()
+
+                if (stmt.superClass != null) endScope()
+
+                currentClass = enclosingClass
             }
         }
     }
@@ -110,7 +167,7 @@ class Resolver(private val interpreter: Interpreter) : Expr.Visitor<Unit>, Stmt.
     }
 
     private fun resolveLocal(expr: Expr, name: Token) {
-        for (i in scopes.size downTo 0) {
+        for (i in scopes.size - 1 downTo 0) {
             if (scopes[i].containsKey(name.lexeme)) {
                 interpreter.resolve(expr, scopes.size - 1 - i)
                 return
