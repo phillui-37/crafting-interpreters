@@ -25,5 +25,6 @@ void freeVM();
 InterpretResult interpret(const char *source);
 void push(Value value);
 Value pop();
+bool valuesEqual(Value a, Value b);
 
 #endif // clox_vm_h
