@@ -12,6 +12,7 @@ typedef struct {
   uint8_t *ip;
   Value stack[STACK_MAX];
   Value *stackTop;
+  Obj *objects;
 } VM;
 
 typedef enum {
@@ -25,6 +26,5 @@ void freeVM();
 InterpretResult interpret(const char *source);
 void push(Value value);
 Value pop();
-bool valuesEqual(Value a, Value b);
 
 #endif // clox_vm_h
