@@ -19,4 +19,4 @@ add_executable(CLox ${SOURCES})
 target_include_directories(CLox PRIVATE header)
 
 ## Compiler options
-target_compile_options(CLox PRIVATE -Wall)
+target_compile_options(CLox PRIVATE -Wall -O3)
